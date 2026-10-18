@@ -1,0 +1,163 @@
+@import "tailwindcss";
+
+/* Полная дизайн-система кофейни по правилам Tailwind v4 */
+@theme {
+  /* Палитра крафтовых цветов */
+  --color-paper: #f6f1e8;
+  --color-paper-deep: #efe7d8;
+  --color-ink: #2b2118;
+  --color-ink-soft: #5c4f40;
+  --color-accent: #c4572b;
+  --color-accent-deep: #8e3d1b;
+  --color-olive: #4a4338;
+  --color-olive-soft: #7a6b4f;
+  --color-line: #dcd0bc;
+  --color-card: #fdfbf6;
+  --color-success: #4c6b45;
+  --color-error: #a6402b;
+
+  /* Шрифты */
+  --font-serif: "Spectral", "Literata", "Georgia", serif;
+  --font-sans: "Manrope", "system-ui", sans-serif;
+
+  /* Межбуквенный интервал (трекинг) */
+  --letter-spacing-tightest: -0.03em;
+  --letter-spacing-caps: 0.14em;
+
+  /* Максимальная ширина контейнера */
+  --max-width-container: 1200px;
+
+  /* Эффекты теней (Shadows) */
+  --shadow-header: 0 1px 0 0 #dcd0bc, 0 6px 18px -10px rgba(43, 33, 24, 0.25);
+}
+
+/* Базовые стили элементов */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  @apply bg-paper text-ink font-sans antialiased;
+  font-feature-settings: "tnum" 0;
+}
+
+h1,
+h2,
+h3 {
+  @apply font-serif;
+  text-wrap: balance;
+}
+
+::selection {
+  background: #c4572b;
+  color: #fdfbf6;
+}
+
+:focus-visible {
+  outline: 2px solid #c4572b;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Кастомные утилиты Tailwind v4 */
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+@utility caps {
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-caps);
+}
+
+/* Кварта — оригинальные крафтовые детали от Bolt.ai */
+
+/* Зерно бумаги — лёгкий SVG-noise поверх фона */
+.paper-noise::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://w3.org' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Зигзаг-перфорация отрывного талона */
+.perf-top {
+  --c: #4a4338;
+  --paper: #f6f1e8;
+  background:
+    radial-gradient(circle at 6px 0, transparent 6px, var(--c) 6.5px) 0 0/12px
+      12px,
+    var(--c);
+  -webkit-mask: linear-gradient(#000, #000) 0 12px/100% calc(100% - 12px)
+    no-repeat;
+  mask: linear-gradient(#000, #000) 0 12px/100% calc(100% - 12px) no-repeat;
+}
+
+/* Пунктирная линия-разделитель как в чеке/меню */
+.dashed-y {
+  background-image: linear-gradient(
+    to right,
+    currentColor 50%,
+    transparent 50%
+  );
+  background-size: 8px 1px;
+  background-repeat: repeat-x;
+  background-position: center;
+  height: 1px;
+}
+
+/* Вертикальный пунктир */
+.dashed-x {
+  background-image: linear-gradient(
+    to bottom,
+    currentColor 50%,
+    transparent 50%
+  );
+  background-size: 1px 8px;
+  background-repeat: repeat-y;
+  background-position: center;
+  width: 1px;
+}
+
+/* Пунктирное подчёркивание при hover для текстовых ссылок */
+.link-dashed {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 0% 1px;
+  transition: background-size 0.25s ease;
+}
+
+.link-dashed:hover {
+  background-size: 100% 1px;
+  background-position: 0 100%;
+}
+
+.link-dashed--dotted {
+  background-image: linear-gradient(
+    to right,
+    currentColor 50%,
+    transparent 50%
+  );
+  background-size: 6px 1px;
+}
+
+/* Двойная рамка «печати» */
+.stamp-frame {
+  box-shadow:
+    0 0 0 1px currentColor,
+    inset 0 0 0 3px transparent,
+    inset 0 0 0 4px currentColor;
+}
