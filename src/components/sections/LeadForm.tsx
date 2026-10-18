@@ -75,7 +75,7 @@ function LeadForm() {
                     name="phone"
                     type="tel"
                     inputMode="tel"
-                    placeholder="+375 (__) ___-__-__"
+                    placeholder="+375 29 123-45-67"
                     className={`w-full rounded-md bg-card px-3 py-2.5 font-sans text-base text-ink tnum placeholder:text-ink-soft/60 focus:outline-none focus:ring-2 focus:ring-accent ${
                       status === "error"
                         ? "border-2 border-error"

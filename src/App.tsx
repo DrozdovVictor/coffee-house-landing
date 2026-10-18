@@ -7,7 +7,7 @@ import Subscription from "./components/sections/Subscription"
 import Delivery from "./components/sections/Delivery"
 import LeadForm from "./components/sections/LeadForm"
 import Footer from "./components/sections/Footer"
-import MobileBar from "./components/sections/MobileBar"
+// import MobileBar from "./components/sections/MobileBar"
 
 function App() {
   return (
@@ -23,7 +23,7 @@ function App() {
           <LeadForm />
         </main>
         <Footer />
-        <MobileBar />
+        {/* <MobileBar /> */}
       </div>
     </div>
   )

@@ -45,7 +45,9 @@ function Subscription() {
                     талон подписки
                   </span>
                   <span className="font-sans text-[0.6875rem] caps text-ink-soft">
-                    ноябрь
+                    {Intl.DateTimeFormat("ru-RU", { month: "long" }).format(
+                      new Date(),
+                    )}
                   </span>
                 </div>
 

@@ -48,7 +48,7 @@ function Footer() {
             <h3 className="font-sans text-[0.6875rem] caps text-paper/60">
               Сейчас
             </h3>
-            <p className="mt-3 max-w-[14rem] font-serif text-base italic text-paper/85">
+            <p className="mt-3 max-w-56 font-serif text-base italic text-paper/85">
               Партия этой недели обжаривается в четверг.
             </p>
           </div>
