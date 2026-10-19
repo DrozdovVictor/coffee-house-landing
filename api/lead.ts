@@ -6,10 +6,9 @@ import {
   Timestamp,
   FieldValue,
 } from "firebase-admin/firestore"
-import { normalizeBelarusPhone } from "../src/utilities/checkPhone"
 
 // ==========================================
-// 1. ВСТРОЕННЫЙ КОД ИЗ server/firebase.ts
+// 1. ВСТРОЕННЫЙ КОД FIREBASE
 // ==========================================
 const globalRef = globalThis as unknown as { kvartaFirebaseApp?: App }
 
@@ -32,7 +31,7 @@ function getDb(): Firestore {
 }
 
 // ==========================================
-// 2. ВСТРОЕННЫЙ КОД ИЗ server/telegram.ts
+// 2. ВСТРОЕННЫЙ КОД TELEGRAM
 // ==========================================
 const INTEREST_LABELS: Record<string, string> = {
   subscription: "Подписка",
@@ -40,16 +39,7 @@ const INTEREST_LABELS: Record<string, string> = {
   question: "Вопрос",
 }
 
-interface TelegramLead {
-  name: string
-  phone: string
-  interest: string
-  comment: string
-  utm: Record<string, string>
-  sourcePage: string
-}
-
-async function notifyTelegram(lead: TelegramLead): Promise<void> {
+async function notifyTelegram(lead: any): Promise<void> {
   const token = process.env.TELEGRAM_BOT_TOKEN
   const chatId = process.env.TELEGRAM_CHAT_ID
   if (!token || !chatId) return
@@ -57,7 +47,6 @@ async function notifyTelegram(lead: TelegramLead): Promise<void> {
   const utmLines = Object.entries(lead.utm)
     .map(([k, v]) => `${k}: ${v}`)
     .join("\n")
-
   const text = [
     "☕ Новая заявка — Кварта",
     `Имя: ${lead.name}`,
@@ -77,10 +66,7 @@ async function notifyTelegram(lead: TelegramLead): Promise<void> {
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: text.slice(0, 4000),
-      }),
+      body: JSON.stringify({ chat_id: chatId, text: text.slice(0, 4000) }),
       signal: controller.signal,
     })
   } catch (err) {
@@ -91,7 +77,31 @@ async function notifyTelegram(lead: TelegramLead): Promise<void> {
 }
 
 // ==========================================
-// 3. ОСНОВНОЙ ОБРАБОТЧИК (ваш handler)
+// 3. ВСТРОЕННАЯ ВАЛИДАЦИЯ ТЕЛЕФОНА
+// ==========================================
+function normalizeBelarusPhone(phone: string): string | null {
+  if (!phone) return null
+  let cleaned = phone.replace(/[^\d+]/g, "")
+
+  // Если начинается с 80, меняем на +375
+  if (cleaned.startsWith("80")) {
+    cleaned = "+375" + cleaned.slice(2)
+  }
+  // Если начинается с 375 (без плюса), добавляем плюс
+  if (cleaned.startsWith("375")) {
+    cleaned = "+" + cleaned
+  }
+
+  // Проверяем валидность (код оператора + 7 цифр)
+  if (/^\+375(25|29|33|44)\d{7}$/.test(cleaned)) {
+    return cleaned
+  }
+
+  return null
+}
+
+// ==========================================
+// 4. ОСНОВНОЙ ОБРАБОТЧИК (HANDLER)
 // ==========================================
 const ALLOWED_INTERESTS = ["subscription", "order", "question"] as const
 const DEDUP_WINDOW_MS = 10 * 60 * 1000
@@ -125,7 +135,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const body = (req.body ?? {}) as Record<string, unknown>
-
     const name = typeof body.name === "string" ? body.name.trim() : ""
     const phoneRaw = typeof body.phone === "string" ? body.phone : ""
     const interest = typeof body.interest === "string" ? body.interest : ""
@@ -138,9 +147,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const phone = normalizeBelarusPhone(phoneRaw)
     if (!phone) {
-      return res.status(400).json({
-        message: "Номер не похож на белорусский. Пример: +375 29 123-45-67",
-      })
+      return res
+        .status(400)
+        .json({
+          message: "Номер не похож на белорусский. Пример: +375 29 123-45-67",
+        })
     }
 
     if (!(ALLOWED_INTERESTS as readonly string[]).includes(interest)) {
@@ -155,7 +166,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const db = getDb()
     const leadsRef = db.collection("leads")
-
     const cutoff = Date.now() - DEDUP_WINDOW_MS
     const bucket = Math.floor(Date.now() / DEDUP_WINDOW_MS)
     const docId = `lead_${phone.replace("+", "")}_${bucket}`
@@ -189,7 +199,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     await notifyTelegram({ name, phone, interest, comment, utm, sourcePage })
-
     return res.status(200).json({ status: "ok" })
   } catch (err) {
     console.error("[lead] unhandled error:", err)
