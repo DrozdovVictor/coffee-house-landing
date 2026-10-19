@@ -1,11 +1,100 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
-import { Timestamp, FieldValue } from "firebase-admin/firestore"
-import { getDb } from "../server/firebase"
-import { notifyTelegram } from "../server/telegram"
-import { normalizeBelarusPhone } from "../src/utilities/checkPhone"
+import { initializeApp, cert, type App } from "firebase-admin/app"
+import {
+  getFirestore,
+  type Firestore,
+  Timestamp,
+  FieldValue,
+} from "firebase-admin/firestore"
+import { normalizeBelarusPhone } from "../../src/utilities/checkPhone"
 
+// ==========================================
+// 1. ВСТРОЕННЫЙ КОД ИЗ server/firebase.ts
+// ==========================================
+const globalRef = globalThis as unknown as { kvartaFirebaseApp?: App }
+
+function getDb(): Firestore {
+  if (!globalRef.kvartaFirebaseApp) {
+    const projectId = process.env.FIREBASE_PROJECT_ID
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n")
+
+    if (!projectId || !clientEmail || !privateKey) {
+      throw new Error("[firebase] Отсутствуют переменные окружения")
+    }
+
+    globalRef.kvartaFirebaseApp = initializeApp(
+      { credential: cert({ projectId, clientEmail, privateKey }) },
+      "kvarta",
+    )
+  }
+  return getFirestore(globalRef.kvartaFirebaseApp)
+}
+
+// ==========================================
+// 2. ВСТРОЕННЫЙ КОД ИЗ server/telegram.ts
+// ==========================================
+const INTEREST_LABELS: Record<string, string> = {
+  subscription: "Подписка",
+  order: "Разовый заказ",
+  question: "Вопрос",
+}
+
+interface TelegramLead {
+  name: string
+  phone: string
+  interest: string
+  comment: string
+  utm: Record<string, string>
+  sourcePage: string
+}
+
+async function notifyTelegram(lead: TelegramLead): Promise<void> {
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  const chatId = process.env.TELEGRAM_CHAT_ID
+  if (!token || !chatId) return
+
+  const utmLines = Object.entries(lead.utm)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join("\n")
+
+  const text = [
+    "☕ Новая заявка — Кварта",
+    `Имя: ${lead.name}`,
+    `Телефон: ${lead.phone}`,
+    `Интересует: ${INTEREST_LABELS[lead.interest] ?? lead.interest}`,
+    lead.comment ? `Комментарий: ${lead.comment}` : "",
+    `Страница: ${lead.sourcePage}`,
+    utmLines ? `Реклама:\n${utmLines}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n")
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 2000)
+
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: text.slice(0, 4000),
+      }),
+      signal: controller.signal,
+    })
+  } catch (err) {
+    console.error("[telegram] notify failed:", err)
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+// ==========================================
+// 3. ОСНОВНОЙ ОБРАБОТЧИК (ваш handler)
+// ==========================================
 const ALLOWED_INTERESTS = ["subscription", "order", "question"] as const
-const DEDUP_WINDOW_MS = 10 * 60 * 1000 // 10 минут — требование ТЗ
+const DEDUP_WINDOW_MS = 10 * 60 * 1000
 
 const UTM_KEYS = [
   "utm_source",
