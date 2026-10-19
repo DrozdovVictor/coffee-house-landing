@@ -6,7 +6,7 @@ import {
   Timestamp,
   FieldValue,
 } from "firebase-admin/firestore"
-import { normalizeBelarusPhone } from "../../src/utilities/checkPhone"
+import { normalizeBelarusPhone } from "../src/utilities/checkPhone"
 
 // ==========================================
 // 1. ВСТРОЕННЫЙ КОД ИЗ server/firebase.ts
