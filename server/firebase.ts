@@ -10,30 +10,16 @@ const globalRef = globalThis as unknown as {
 
 export function getDb(): Firestore {
   if (!globalRef.kvartaFirebaseApp) {
-    const projectId = process.env.FIREBASE_PROJECT_ID
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
-
-    // Критически важно: Vercel передает переменные окружения в виде строк,
-    // поэтому мы заменяем текстовые \n на реальные переносы строк.
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n")
-
-    if (!projectId || !clientEmail || !privateKey) {
-      throw new Error(
-        "[firebase] Отсутствуют переменные окружения (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY)",
-      )
+    const serviceAccountRaw = process.env.FIREBASE_SERVICE_ACCOUNT
+    if (!serviceAccountRaw) {
+      throw new Error("[firebase] FIREBASE_SERVICE_ACCOUNT is missing")
     }
+    const serviceAccount = JSON.parse(serviceAccountRaw)
 
     globalRef.kvartaFirebaseApp = initializeApp(
-      {
-        credential: cert({
-          projectId,
-          clientEmail,
-          privateKey,
-        }),
-      },
+      { credential: cert(serviceAccount) },
       "kvarta",
     )
   }
-
   return getFirestore(globalRef.kvartaFirebaseApp)
 }
